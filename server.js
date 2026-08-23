@@ -20,14 +20,14 @@ const NAVER_CLIENT_SECRET = '';
 // 단위 변환 및 숫자 추출 헬퍼 함수
 function parseUnitValue(text) {
   if (!text) return null;
-  // 숫자와 단위(ml, l, g, kg, 개, 입, p, 매) 추출 정규식
-  const match = text.match(/(\d+(?:\.\d+)?)\s*(ml|l|g|kg|개|입|매|p)/i);
+  // 콤마 제거 및 공백 정규화 후 숫자와 단위 추출
+  const cleanText = text.replace(/,/g, '');
+  const match = cleanText.match(/(\d+(?:\.\d+)?)\s*(ml|l|g|kg|개|입|매|p)/i);
   if (!match) return null;
 
   let val = parseFloat(match[1]);
   let unit = match[2].toLowerCase();
 
-  // 표준화: L -> ml (1000), kg -> g (1000)
   if (unit === 'l') { val *= 1000; unit = 'ml'; }
   if (unit === 'kg') { val *= 1000; unit = 'g'; }
   
