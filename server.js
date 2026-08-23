@@ -19,9 +19,13 @@ const NAVER_CLIENT_SECRET = '';
 
 app.get('/api/search', async (req, res) => {
   const keyword = req.query.keyword;
+  const minPrice = req.query.minPrice ? parseInt(req.query.minPrice, 10) : null;
+  const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice, 10) : null;
+  const volume = req.query.volume ? req.query.volume.trim().toLowerCase() : null;
+
   if (!keyword) return res.status(400).json({ error: '검색어가 필요합니다.' });
 
-  const results = [];
+  let results = [];
 
   // 1. 다나와 크롤링 (쇼핑몰별 최저가 파싱)
   try {
@@ -114,6 +118,30 @@ app.get('/api/search', async (req, res) => {
     // 토스 서버 방어막 작동 시 모의 응답 방어선
     console.error('토스쇼핑 연결 제한 (차단 방지 로직 적용)');
   }
+
+  // 상세 조건 필터링 (최저 가격, 최고 가격, 용량/단위)
+  results = results.filter(item => {
+    // 1. 가격 필터링
+    if (minPrice !== null && !isNaN(minPrice) && item.price < minPrice) {
+      return false;
+    }
+    if (maxPrice !== null && !isNaN(maxPrice) && item.price > maxPrice) {
+      return false;
+    }
+
+    // 2. 용량/단위 필터링 (상품 제목에 용량/단위 문구가 포함되어 있는지 검사)
+    if (volume) {
+      const titleLower = item.title.toLowerCase();
+      // 공백 제거 버전과 원본 버전 둘 다 검색 지원 (예: "100g" vs "100 g")
+      const volumeNoSpace = volume.replace(/\s+/g, '');
+      const titleNoSpace = titleLower.replace(/\s+/g, '');
+      if (!titleLower.includes(volume) && !titleNoSpace.includes(volumeNoSpace)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   // 가격순 정렬
   results.sort((a, b) => a.price - b.price);
