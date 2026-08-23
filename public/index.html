@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>온라인 실시간 가격 비교</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-4xl mx-auto p-6">
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-blue-600 mb-4">온라인 실시간 가격 비교</h1>
+      
+      <!-- form 태그 추가로 엔터키 검색 보장 -->
+      <form onsubmit="searchProducts(event)" class="flex gap-2 justify-center">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="검색어를 입력하세요 (예: 이노스페이스원 루나 x2)" 
+          class="w-full max-w-md p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+        <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">검색</button>
+      </form>
+    </header>
+
+    <div id="loading" class="hidden text-center py-10">
+      <p class="text-lg text-gray-600 animate-pulse">실시간 가격 수집 중...</p>
+    </div>
+
+    <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <script>
+    async function searchProducts(e) {
+      if (e) e.preventDefault(); // 엔터 제출 시 페이지 새로고침 방지
+
+      const keyword = document.getElementById('searchInput').value.trim();
+      if (!keyword) return alert('검색어를 입력하세요.');
+
+      const resultsDiv = document.getElementById('results');
+      const loadingDiv = document.getElementById('loading');
+
+      resultsDiv.innerHTML = '';
+      loadingDiv.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
+        const data = await res.json();
+        loadingDiv.classList.add('hidden');
+
+        if (!data || data.length === 0) {
+          resultsDiv.innerHTML = '<p class="col-span-2 text-center text-gray-500">검색 결과가 없습니다.</p>';
+          return;
+        }
+
+        resultsDiv.innerHTML = data.map(item => `
+          <div class="bg-white p-4 rounded-xl shadow flex gap-4 items-center">
+            <img src="${item.image}" alt="" class="w-24 h-24 object-contain rounded">
+            <div class="flex-1">
+              <span class="inline-block ${item.source === '다나와' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'} text-xs px-2 py-1 rounded font-semibold mb-1">${item.source}</span>
+              <h2 class="font-bold text-gray-800 line-clamp-2">${item.title}</h2>
+              <p class="text-red-600 font-extrabold text-lg mt-1">${item.price.toLocaleString()} 원</p>
+              <a href="${item.link}" target="_blank" class="inline-block mt-2 text-xs text-blue-500 hover:underline">상세보기 &rarr;</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        loadingDiv.classList.add('hidden');
+        alert('데이터 수집 중 오류가 발생했습니다.');
+      }
+    }
+  </script>
+</body>
+</html>
