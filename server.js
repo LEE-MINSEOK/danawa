@@ -17,11 +17,29 @@ const headers = {
 const NAVER_CLIENT_ID = ''; 
 const NAVER_CLIENT_SECRET = '';
 
+// 단위 변환 및 숫자 추출 헬퍼 함수
+function parseUnitValue(text) {
+  if (!text) return null;
+  // 숫자와 단위(ml, l, g, kg, 개, 입, p, 매) 추출 정규식
+  const match = text.match(/(\d+(?:\.\d+)?)\s*(ml|l|g|kg|개|입|매|p)/i);
+  if (!match) return null;
+
+  let val = parseFloat(match[1]);
+  let unit = match[2].toLowerCase();
+
+  // 표준화: L -> ml (1000), kg -> g (1000)
+  if (unit === 'l') { val *= 1000; unit = 'ml'; }
+  if (unit === 'kg') { val *= 1000; unit = 'g'; }
+  
+  return { val, unit };
+}
+
 app.get('/api/search', async (req, res) => {
   const keyword = req.query.keyword;
   const minPrice = req.query.minPrice ? parseInt(req.query.minPrice, 10) : null;
   const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice, 10) : null;
   const volume = req.query.volume ? req.query.volume.trim().toLowerCase() : null;
+  const volumeOp = req.query.volumeOp; // 이상('gte') / 이하('lte') 조건
 
   if (!keyword) return res.status(400).json({ error: '검색어가 필요합니다.' });
 
@@ -115,7 +133,6 @@ app.get('/api/search', async (req, res) => {
       });
     }
   } catch (err) {
-    // 토스 서버 방어막 작동 시 모의 응답 방어선
     console.error('토스쇼핑 연결 제한 (차단 방지 로직 적용)');
   }
 
@@ -129,13 +146,19 @@ app.get('/api/search', async (req, res) => {
       return false;
     }
 
-    // 2. 용량/단위 필터링 (상품 제목에 용량/단위 문구가 포함되어 있는지 검사)
+    // 2. 정교한 용량/단위 비교 필터링
     if (volume) {
-      const titleLower = item.title.toLowerCase();
-      // 공백 제거 버전과 원본 버전 둘 다 검색 지원 (예: "100g" vs "100 g")
-      const volumeNoSpace = volume.replace(/\s+/g, '');
-      const titleNoSpace = titleLower.replace(/\s+/g, '');
-      if (!titleLower.includes(volume) && !titleNoSpace.includes(volumeNoSpace)) {
+      const userSpec = parseUnitValue(volume); // 사용자가 입력한 값
+      const itemSpec = parseUnitValue(item.title); // 상품 제목에서 추출한 값
+
+      if (userSpec && itemSpec) {
+        // 단위가 같은 경우에만 비교 수행
+        if (userSpec.unit === itemSpec.unit) {
+          if (volumeOp === 'gte' && itemSpec.val < userSpec.val) return false; // 이상 조건 미달
+          if (volumeOp === 'lte' && itemSpec.val > userSpec.val) return false; // 이하 조건 초과
+        }
+      } else if (userSpec && !itemSpec) {
+        // 사용자는 용량을 입력했는데 상품 제목에 용량이 안 보이면 검색 결과에서 제외
         return false;
       }
     }
