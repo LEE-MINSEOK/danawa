@@ -102,7 +102,7 @@
     }
 
     async function searchProducts(e) {
-      if (e) e.preventDefault(); // 엔터 제출 시 페이지 새로고침 방지
+      if (e) e.preventDefault();
 
       const keyword = document.getElementById('searchInput').value.trim();
       if (!keyword) return alert('검색어를 입력하세요.');
@@ -110,6 +110,7 @@
       const minPrice = document.getElementById('minPrice').value.trim();
       const maxPrice = document.getElementById('maxPrice').value.trim();
       const volume = document.getElementById('volume').value.trim();
+      const volumeOp = document.getElementById('volumeOp').value;
 
       const resultsDiv = document.getElementById('results');
       const loadingDiv = document.getElementById('loading');
@@ -121,7 +122,10 @@
         const queryParams = new URLSearchParams({ keyword });
         if (minPrice) queryParams.append('minPrice', minPrice);
         if (maxPrice) queryParams.append('maxPrice', maxPrice);
-        if (volume) queryParams.append('volume', volume);
+        if (volume) {
+          queryParams.append('volume', volume);
+          queryParams.append('volumeOp', volumeOp);
+        }
 
         const res = await fetch(`/api/search?${queryParams.toString()}`);
         const data = await res.json();
