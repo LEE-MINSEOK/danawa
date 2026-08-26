@@ -21,7 +21,7 @@ async function fetchDanawa(keyword) {
   const results = [];
   try {
     const url = `https://search.danawa.com/dsearch.php?query=${encodeURIComponent(keyword)}`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } });
     const html = await res.text();
     
     const blocks = html.match(/<li class="prod_item[^"]*">([\s\S]*?)<\/li>/g) || [];
