@@ -20,16 +20,21 @@ function parseUnitValue(text) {
 async function fetchDanawa(keyword) {
   const results = [];
   try {
-    const url = `https://search.danawa.com/dsearch.php?query=${encodeURIComponent(keyword)}`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } });
+    const url = `https://m.danawa.com/search/search.html?keyword=${encodeURIComponent(keyword)}`;
+    const res = await fetch(url, { 
+      headers: { 
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Referer': 'https://m.danawa.com/'
+      } 
+    });
     const html = await res.text();
     
-    const blocks = html.match(/<li class="prod_item[^"]*">([\s\S]*?)<\/li>/g) || [];
+    const blocks = html.match(/<li[^>]*class="[^"]*prod_item[^"]*"[^>]*>([\s\S]*?)<\/li>/g) || [];
     for (const block of blocks) {
-      const titleMatch = block.match(/class="prod_name[^"]*"[^>]*>([\s\S]*?)<\/a>/);
-      const priceMatch = block.match(/class="price_sect"[^>]*>([\s\S]*?)<\/strong>/);
-      const imgMatch = block.match(/class="thumb_image"[^>]*>[\s\S]*?src="([^"]+)"/) || block.match(/data-original="([^"]+)"/);
-      const linkMatch = block.match(/class="prod_name[^"]*"[^>]*href="([^"]+)"/);
+      const titleMatch = block.match(/class="[^"]*prod_name[^"]*"[^>]*>([\s\S]*?)<\/[a-z>]+>/i) || block.match(/tit">([^<]+)/);
+      const priceMatch = block.match(/class="[^"]*price[^"]*"[^>]*>([\s\S]*?)<\/[a-z>]+>/i) || block.match(/(\d[,\d]*)\s*원/);
+      const imgMatch = block.match(/src="([^"]+)"/) || block.match(/data-original="([^"]+)"/);
+      const linkMatch = block.match(/href="([^"]+)"/);
 
       if (titleMatch && priceMatch) {
         const title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
