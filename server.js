@@ -54,11 +54,11 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   
   if (parsedUrl.pathname === '/') {
-    const htmlPath = path.join(__dirname, 'index.html');
+    const htmlPath = path.join(__dirname, 'public', 'index.html');
     fs.readFile(htmlPath, (err, data) => {
       if (err) {
         res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('index.html 파일을 찾을 수 없습니다.');
+        res.end('public/index.html 파일을 찾을 수 없습니다.');
         return;
       }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
